@@ -132,7 +132,7 @@ To protect business logic, sensitive configurations, and proprietary workflows:
 
 **Adarsh Kumar**
 **Harshit Pal**
-**Vishal bhaudariya**
+**Vishal Bhadauria**
 
 
 
