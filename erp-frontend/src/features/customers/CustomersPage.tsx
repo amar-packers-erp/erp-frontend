@@ -18,7 +18,7 @@ function formatCurrency(amount: number) {
 function EmptyState() {
   return (
     <tr>
-      <td colSpan={7}>
+      <td colSpan={8}>
         <div className="flex flex-col items-center justify-center py-14 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-neutral-800">
             <Users size={22} className="text-gray-400" />
@@ -141,6 +141,7 @@ export function CustomersPage() {
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">GSTIN</th>
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Contact</th>
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Address</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Linked Items</th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Credit Limit</th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Outstanding</th>
                 {isAdmin && <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Actions</th>}
@@ -149,7 +150,7 @@ export function CustomersPage() {
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-8 text-center text-sm text-gray-400">Loading...</td>
+                  <td colSpan={8} className="px-5 py-8 text-center text-sm text-gray-400">Loading...</td>
                 </tr>
               ) : customers.length === 0 ? (
                 <EmptyState />
@@ -166,6 +167,32 @@ export function CustomersPage() {
                       {customer.email && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{customer.email}</p>}
                     </td>
                     <td className="px-5 py-3.5 text-gray-600 dark:text-gray-400 max-w-[200px] truncate">{customer.billingAddress || '—'}</td>
+                    <td className="px-5 py-3.5">
+                      {customer.linkedItems && customer.linkedItems.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 max-w-[200px]">
+                          {customer.linkedItems.slice(0, 2).map((item) => (
+                            <span key={item._id} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                              {item.itemName}
+                            </span>
+                          ))}
+                          {customer.linkedItems.length > 2 && (
+                            <div className="relative group inline-flex">
+                              <span 
+                                className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700 cursor-help" 
+                              >
+                                +{customer.linkedItems.length - 2} more
+                              </span>
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-50 w-max max-w-[200px] bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs rounded shadow-lg px-2.5 py-1.5 whitespace-pre-wrap text-center font-medium">
+                                {customer.linkedItems.slice(2).map(i => i.itemName).join('\n')}
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-white"></div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
+                    </td>
                     <td className="px-5 py-3.5 text-right font-medium text-gray-900 dark:text-gray-100">{formatCurrency(customer.creditLimit)}</td>
                     <td className="px-5 py-3.5 text-right">
                       <span className={customer.outstandingBalance > 0 ? 'text-red-600 font-medium' : 'text-gray-400'}>

@@ -37,8 +37,8 @@ const schema = z.object({
     numberOf2Ply: z.string().optional(),
     twoPlyGsm: z.string().optional(),
     twoPlyRate: z.string().optional(),
-    printed: z.boolean().optional(),
-    laminated: z.boolean().optional(),
+    printed: z.coerce.boolean().optional(),
+    laminated: z.coerce.boolean().optional(),
     PrintingSize: z.string().optional(),
     PrintingCost: z.string().optional(),
     PrintingSheets: z.string().optional(),
@@ -73,7 +73,10 @@ export function ItemForm({ initialData, onSubmit, isSubmitting }: ItemFormProps)
       type: initialData.type,
       category: initialData.category,
       unitOfMeasure: initialData.unitOfMeasure,
-      itemSpecification: initialData.itemSpecification || initialData.specifications || {},
+      itemSpecification: {
+        gsm: String((initialData.itemSpecification || initialData.specifications || {})?.gsm || ''),
+        dimensions: String((initialData.itemSpecification || initialData.specifications || {})?.dimensions || ''),
+      },
       boxSpecification: {
         boxType: initialData.boxSpecification?.boxType || '',
         boxesPerSheet: String(initialData.boxSpecification?.boxesPerSheet || '1'),
@@ -93,8 +96,8 @@ export function ItemForm({ initialData, onSubmit, isSubmitting }: ItemFormProps)
         numberOf2Ply: initialData.orderConfigurations?.numberOf2Ply || '0',
         twoPlyGsm: String(initialData.orderConfigurations?.twoPlyGsm || ''),
         twoPlyRate: String(initialData.orderConfigurations?.twoPlyRate || ''),
-        printed: initialData.orderConfigurations?.printed || false,
-        laminated: initialData.orderConfigurations?.laminated || false,
+        printed: Boolean(initialData.orderConfigurations?.printed),
+        laminated: Boolean(initialData.orderConfigurations?.laminated),
         PrintingSize: String(initialData.orderConfigurations?.PrintingSize || ''),
         PrintingCost: String(initialData.orderConfigurations?.PrintingCost || ''),
         PrintingSheets: String(initialData.orderConfigurations?.PrintingSheets || ''),
@@ -128,7 +131,10 @@ export function ItemForm({ initialData, onSubmit, isSubmitting }: ItemFormProps)
         type: initialData.type,
         category: initialData.category,
         unitOfMeasure: initialData.unitOfMeasure,
-        itemSpecification: initialData.itemSpecification || initialData.specifications || {},
+        itemSpecification: {
+          gsm: String((initialData.itemSpecification || initialData.specifications || {})?.gsm || ''),
+          dimensions: String((initialData.itemSpecification || initialData.specifications || {})?.dimensions || ''),
+        },
         boxSpecification: {
           boxType: initialData.boxSpecification?.boxType || '',
           boxesPerSheet: String(initialData.boxSpecification?.boxesPerSheet || '1'),
@@ -148,8 +154,8 @@ export function ItemForm({ initialData, onSubmit, isSubmitting }: ItemFormProps)
           numberOf2Ply: initialData.orderConfigurations?.numberOf2Ply || '0',
           twoPlyGsm: String(initialData.orderConfigurations?.twoPlyGsm || ''),
           twoPlyRate: String(initialData.orderConfigurations?.twoPlyRate || ''),
-          printed: initialData.orderConfigurations?.printed || false,
-          laminated: initialData.orderConfigurations?.laminated || false,
+          printed: Boolean(initialData.orderConfigurations?.printed),
+          laminated: Boolean(initialData.orderConfigurations?.laminated),
           PrintingSize: String(initialData.orderConfigurations?.PrintingSize || ''),
           PrintingCost: String(initialData.orderConfigurations?.PrintingCost || ''),
           PrintingSheets: String(initialData.orderConfigurations?.PrintingSheets || ''),
@@ -175,6 +181,12 @@ export function ItemForm({ initialData, onSubmit, isSubmitting }: ItemFormProps)
 
   const onFormSubmit = (data: FormValues) => {
     const payload: any = { ...data };
+    
+    // If customer is unlinked (empty string), set it to null so backend removes it
+    if (payload.customer === '') {
+      payload.customer = null;
+    }
+
     // Convert numeric strings in boxSpecification to numbers
     if (payload.boxSpecification) {
       const bs = payload.boxSpecification;
@@ -223,7 +235,7 @@ export function ItemForm({ initialData, onSubmit, isSubmitting }: ItemFormProps)
   const inputClass = 'w-full rounded-lg border border-gray-300 dark:border-neutral-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-black placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors shadow-inner';
 
   return (
-    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-5 p-1 pb-10">
+    <form onSubmit={handleSubmit(onFormSubmit)} noValidate className="space-y-5 p-1 pb-10">
 
       {/* Basic Info */}
       <div className="space-y-4">
