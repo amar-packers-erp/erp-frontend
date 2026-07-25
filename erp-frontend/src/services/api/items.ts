@@ -12,6 +12,11 @@ export async function getItems(): Promise<ItemsResponse> {
   return response.data;
 }
 
+export async function getItemsByCustomer(customerId: string): Promise<ItemsResponse> {
+  const response = await api.get<ItemsResponse>(`/items?customer=${customerId}`);
+  return response.data;
+}
+
 export async function createItem(data: ItemFormData) {
   const response = await api.post('/items', data);
   return response.data;

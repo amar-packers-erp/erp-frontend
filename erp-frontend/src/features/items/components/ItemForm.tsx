@@ -5,6 +5,7 @@ import { STOCK_CATEGORIES } from '../../../mocks/items';
 import type { ItemFormData, Item } from '../types';
 import { useEffect } from 'react';
 import { useCustomers } from '../../customers/hooks/useCustomers';
+import { OrderConfigurationsSection } from './OrderConfigurationsSection';
 
 const schema = z.object({
   itemName: z.string().min(2, 'Item Name is required'),
@@ -27,6 +28,30 @@ const schema = z.object({
     height: z.string().optional(),
     sheetLength: z.string().optional(),
     sheetBreadth: z.string().optional(),
+  }).optional(),
+  orderConfigurations: z.object({
+    duplexLength: z.string().optional(),
+    duplexBreadth: z.string().optional(),
+    duplexGsm: z.string().optional(),
+    duplexRate: z.string().optional(),
+    numberOf2Ply: z.string().optional(),
+    twoPlyGsm: z.string().optional(),
+    twoPlyRate: z.string().optional(),
+    printed: z.boolean().optional(),
+    laminated: z.boolean().optional(),
+    PrintingSize: z.string().optional(),
+    PrintingCost: z.string().optional(),
+    PrintingSheets: z.string().optional(),
+    lamRollSize: z.string().optional(),
+    lamSheetLength: z.string().optional(),
+    lamType: z.string().optional(),
+    fevicolCostPerSheet: z.string().optional(),
+    lamCostPerSheet: z.string().optional(),
+    sheeterRate: z.string().optional(),
+    pastingRate: z.string().optional(),
+    dieRate: z.string().optional(),
+    stitchingRate: z.string().optional(),
+    strappingRate: z.string().optional(),
   }).optional()
 });
 
@@ -60,6 +85,30 @@ export function ItemForm({ initialData, onSubmit, isSubmitting }: ItemFormProps)
         sheetLength: String(initialData.boxSpecification?.sheetLength || ''),
         sheetBreadth: String(initialData.boxSpecification?.sheetBreadth || ''),
       },
+      orderConfigurations: {
+        duplexLength: String(initialData.orderConfigurations?.duplexLength || ''),
+        duplexBreadth: String(initialData.orderConfigurations?.duplexBreadth || ''),
+        duplexGsm: String(initialData.orderConfigurations?.duplexGsm || ''),
+        duplexRate: String(initialData.orderConfigurations?.duplexRate || ''),
+        numberOf2Ply: initialData.orderConfigurations?.numberOf2Ply || '0',
+        twoPlyGsm: String(initialData.orderConfigurations?.twoPlyGsm || ''),
+        twoPlyRate: String(initialData.orderConfigurations?.twoPlyRate || ''),
+        printed: initialData.orderConfigurations?.printed || false,
+        laminated: initialData.orderConfigurations?.laminated || false,
+        PrintingSize: String(initialData.orderConfigurations?.PrintingSize || ''),
+        PrintingCost: String(initialData.orderConfigurations?.PrintingCost || ''),
+        PrintingSheets: String(initialData.orderConfigurations?.PrintingSheets || ''),
+        lamRollSize: String(initialData.orderConfigurations?.lamRollSize || ''),
+        lamSheetLength: String(initialData.orderConfigurations?.lamSheetLength || ''),
+        lamType: initialData.orderConfigurations?.lamType || 'BOPP',
+        fevicolCostPerSheet: String(initialData.orderConfigurations?.fevicolCostPerSheet || ''),
+        lamCostPerSheet: String(initialData.orderConfigurations?.lamCostPerSheet || ''),
+        sheeterRate: String(initialData.orderConfigurations?.sheeterRate || ''),
+        pastingRate: String(initialData.orderConfigurations?.pastingRate || ''),
+        dieRate: String(initialData.orderConfigurations?.dieRate || ''),
+        stitchingRate: String(initialData.orderConfigurations?.stitchingRate || ''),
+        strappingRate: String(initialData.orderConfigurations?.strappingRate || ''),
+      }
     } : {
       type: 'FinishedGood',
       category: STOCK_CATEGORIES[0],
@@ -91,6 +140,30 @@ export function ItemForm({ initialData, onSubmit, isSubmitting }: ItemFormProps)
           sheetLength: String(initialData.boxSpecification?.sheetLength || ''),
           sheetBreadth: String(initialData.boxSpecification?.sheetBreadth || ''),
         },
+        orderConfigurations: {
+          duplexLength: String(initialData.orderConfigurations?.duplexLength || ''),
+          duplexBreadth: String(initialData.orderConfigurations?.duplexBreadth || ''),
+          duplexGsm: String(initialData.orderConfigurations?.duplexGsm || ''),
+          duplexRate: String(initialData.orderConfigurations?.duplexRate || ''),
+          numberOf2Ply: initialData.orderConfigurations?.numberOf2Ply || '0',
+          twoPlyGsm: String(initialData.orderConfigurations?.twoPlyGsm || ''),
+          twoPlyRate: String(initialData.orderConfigurations?.twoPlyRate || ''),
+          printed: initialData.orderConfigurations?.printed || false,
+          laminated: initialData.orderConfigurations?.laminated || false,
+          PrintingSize: String(initialData.orderConfigurations?.PrintingSize || ''),
+          PrintingCost: String(initialData.orderConfigurations?.PrintingCost || ''),
+          PrintingSheets: String(initialData.orderConfigurations?.PrintingSheets || ''),
+          lamRollSize: String(initialData.orderConfigurations?.lamRollSize || ''),
+          lamSheetLength: String(initialData.orderConfigurations?.lamSheetLength || ''),
+          lamType: initialData.orderConfigurations?.lamType || 'BOPP',
+          fevicolCostPerSheet: String(initialData.orderConfigurations?.fevicolCostPerSheet || ''),
+          lamCostPerSheet: String(initialData.orderConfigurations?.lamCostPerSheet || ''),
+          sheeterRate: String(initialData.orderConfigurations?.sheeterRate || ''),
+          pastingRate: String(initialData.orderConfigurations?.pastingRate || ''),
+          dieRate: String(initialData.orderConfigurations?.dieRate || ''),
+          stitchingRate: String(initialData.orderConfigurations?.stitchingRate || ''),
+          strappingRate: String(initialData.orderConfigurations?.strappingRate || ''),
+        }
       });
     }
   }, [initialData, reset]);
@@ -117,9 +190,36 @@ export function ItemForm({ initialData, onSubmit, isSubmitting }: ItemFormProps)
         sheetBreadth: Number(bs.sheetBreadth) || 0,
       };
     }
+    
+    if (payload.orderConfigurations) {
+      const oc = payload.orderConfigurations;
+      payload.orderConfigurations = {
+        ...oc,
+        duplexLength: Number(oc.duplexLength) || 0,
+        duplexBreadth: Number(oc.duplexBreadth) || 0,
+        duplexGsm: Number(oc.duplexGsm) || 0,
+        duplexRate: Number(oc.duplexRate) || 0,
+        twoPlyGsm: Number(oc.twoPlyGsm) || 0,
+        twoPlyRate: Number(oc.twoPlyRate) || 0,
+        PrintingSize: Number(oc.PrintingSize) || 0,
+        PrintingCost: Number(oc.PrintingCost) || 0,
+        PrintingSheets: Number(oc.PrintingSheets) || 0,
+        lamRollSize: Number(oc.lamRollSize) || 0,
+        lamSheetLength: Number(oc.lamSheetLength) || 0,
+        fevicolCostPerSheet: Number(oc.fevicolCostPerSheet) || 0,
+        lamCostPerSheet: Number(oc.lamCostPerSheet) || 0,
+        sheeterRate: Number(oc.sheeterRate) || 0,
+        pastingRate: Number(oc.pastingRate) || 0,
+        dieRate: Number(oc.dieRate) || 0,
+        stitchingRate: Number(oc.stitchingRate) || 0,
+        strappingRate: Number(oc.strappingRate) || 0,
+      };
+    }
+
     onSubmit(payload as ItemFormData);
   };
 
+  const watchedType = watch('type');
   const inputClass = 'w-full rounded-lg border border-gray-300 dark:border-neutral-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-black placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors shadow-inner';
 
   return (
@@ -259,6 +359,11 @@ export function ItemForm({ initialData, onSubmit, isSubmitting }: ItemFormProps)
             </div>
           </div>
         </div>
+      )}
+
+      {/* Order Configurations Auto-Fill Section */}
+      {watchedType === 'FinishedGood' && (
+        <OrderConfigurationsSection register={register} inputClass={inputClass} />
       )}
 
       <div className="pt-6 border-t border-gray-200 dark:border-neutral-800">

@@ -4,7 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { OrderFormData } from '../types';
 import { Calculator } from 'lucide-react';
-import { getItems } from '../../../services/api/items';
+import { getItemsByCustomer } from '../../../services/api/items';
+import { getCustomers } from '../../../services/api/customers';
 import type { Item } from '../../items/types';
 
 const schema = z.object({
@@ -36,7 +37,6 @@ const schema = z.object({
   dieRate: z.string().optional(),
   stitchingRate: z.string().optional(),
   strappingRate: z.string().optional(),
-  printingCost: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -60,13 +60,25 @@ function FormField({ label, error, children }: { label: string; error?: string; 
 const inputClass = 'w-full rounded-lg border border-gray-300 dark:border-neutral-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-black placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors shadow-inner';
 
 export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormProps) {
+  const [customers, setCustomers] = useState<Array<{ _id: string; companyName: string }>>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [items, setItems] = useState<Item[]>([]);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [selectedBrand, setSelectedBrand] = useState('');
 
   useEffect(() => {
-    getItems().then(res => setItems(res.data || [])).catch(() => {});
+    getCustomers().then(res => setCustomers(res.data || [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!selectedCustomerId) {
+      setItems([]);
+      return;
+    }
+    getItemsByCustomer(selectedCustomerId)
+      .then(res => setItems(res.data || []))
+      .catch(() => setItems([]));
+  }, [selectedCustomerId]);
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -99,7 +111,6 @@ export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormPr
       dieRate: '',
       stitchingRate: '',
       strappingRate: '',
-      printingCost: '',
       ...defaultValues,
     },
   });
@@ -108,9 +119,19 @@ export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormPr
     new Set(items.map((item) => item.brand?.trim()).filter((brand): brand is string => Boolean(brand)))
   ).sort((a, b) => a.localeCompare(b));
 
+  const handleCustomerSelect = (customerId: string) => {
+    const customer = customers.find(c => c._id === customerId);
+    setSelectedCustomerId(customerId);
+    setValue('customerName', customer?.companyName || '', { shouldValidate: true });
+    setSelectedBrand('');
+    setSelectedItem(null);
+    setValue('itemBrand', '', { shouldValidate: true });
+    setValue('itemName', '', { shouldValidate: true });
+  };
+
   const filteredItems = selectedBrand
     ? items.filter((item) => item.brand?.trim() === selectedBrand)
-    : [];
+    : items;
 
   const handleBrandSelect = (brand: string) => {
     setSelectedBrand(brand);
@@ -135,6 +156,41 @@ export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormPr
     const bs = item.boxSpecification;
     if (bs) {
       setValue('boxesPerSheet', String(bs.boxesPerSheet || 1));
+    }
+
+    const oc = item.orderConfigurations;
+    if (oc) {
+      // Duplex
+      setValue('duplexLength', String(oc.duplexLength || ''));
+      setValue('duplexBreadth', String(oc.duplexBreadth || ''));
+      setValue('duplexGsm', String(oc.duplexGsm || ''));
+      setValue('duplexRate', String(oc.duplexRate || ''));
+
+      // 2-Ply
+      setValue('numberOf2Ply', String(oc.numberOf2Ply || '0'));
+      setValue('twoPlyGsm', String(oc.twoPlyGsm || ''));
+      setValue('twoPlyRate', String(oc.twoPlyRate || ''));
+
+      // Printing & Finishing
+      setValue('printed', oc.printed || false);
+      setValue('laminated', oc.laminated || false);
+      setValue('PrintingSize', String(oc.PrintingSize || ''));
+      setValue('PrintingCost', String(oc.PrintingCost || ''));
+      setValue('PrintingSheets', String(oc.PrintingSheets || ''));
+
+      // Lamination
+      setValue('lamRollSize', String(oc.lamRollSize || ''));
+      setValue('lamSheetLength', String(oc.lamSheetLength || ''));
+      setValue('lamType', oc.lamType || 'BOPP');
+      setValue('fevicolCostPerSheet', String(oc.fevicolCostPerSheet || ''));
+      setValue('lamCostPerSheet', String(oc.lamCostPerSheet || ''));
+
+      // Processing Rates
+      setValue('sheeterRate', String(oc.sheeterRate || ''));
+      setValue('pastingRate', String(oc.pastingRate || ''));
+      setValue('dieRate', String(oc.dieRate || ''));
+      setValue('stitchingRate', String(oc.stitchingRate || ''));
+      setValue('strappingRate', String(oc.strappingRate || ''));
     }
   };
 
@@ -180,13 +236,11 @@ export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormPr
 
   const PrintingSheets = parseNum(watch('PrintingSheets'));
   const PrintingCost = parseNum(watch('PrintingCost'));
-  const PrintingTotalCost = PrintingSheets * PrintingCost;
+  const PrintingTotalCost = isPrinted ? (PrintingSheets * PrintingCost) : 0;
 
   const lamCostPerSht = parseNum(watch('lamCostPerSheet'));
   const fevicolCost = parseNum(watch('fevicolCostPerSheet'));
   const laminationTotalCost = isLaminated ? (lamCostPerSht + fevicolCost) * duplexQtyReq : 0;
-
-  const printingCost = isPrinted ? parseNum(watch('printingCost')) || 0 : 0;
 
   const sheeterCost = parseNum(watch('sheeterRate')) * num2Ply;
   const pastingCost = parseNum(watch('pastingRate')) * duplexQtyReq;
@@ -196,7 +250,7 @@ export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormPr
 
   const processingTotal = sheeterCost + pastingCost + dieCost + stitchingCost + strappingCost;
 
-  const totalCostOverall = duplexTotalCost + twoPlyTotalCost + PrintingTotalCost + laminationTotalCost + printingCost + processingTotal;
+  const totalCostOverall = duplexTotalCost + twoPlyTotalCost + PrintingTotalCost + laminationTotalCost + processingTotal;
   const perBoxCost = qty > 0 ? totalCostOverall / qty : 0;
 
   const sectionClass = "bg-white dark:bg-gray-800/50 p-5 rounded-xl border border-gray-200 dark:border-neutral-800 shadow-sm";
@@ -212,7 +266,19 @@ export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormPr
             <input {...register('orderNumber')} placeholder="e.g. ORD-1001" className={inputClass} />
           </FormField>
           <FormField label="Customer Name *" error={errors.customerName?.message}>
-            <input {...register('customerName')} placeholder="Customer Name" className={inputClass} />
+            <select
+              value={selectedCustomerId}
+              onChange={(e) => handleCustomerSelect(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">— Select Customer —</option>
+              {customers.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.companyName}
+                </option>
+              ))}
+            </select>
+            <input type="hidden" {...register('customerName')} />
           </FormField>
         </div>
 
@@ -358,11 +424,13 @@ export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormPr
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-4">
-          <FormField label="Printing Size (sq in)"><input {...register('PrintingSize')} type="number" step="any" min="0" className={inputClass} /></FormField>
-          <FormField label="Printing Sheets"><input {...register('PrintingSheets')} type="number" min="0" className={inputClass} /></FormField>
-          <FormField label="Cost/Sheet (₹)"><input {...register('PrintingCost')} type="number" step="any" min="0" className={inputClass} /></FormField>
-        </div>
+        {isPrinted && (
+          <div className="grid grid-cols-3 gap-4">
+            <FormField label="Printing Size (sq in)"><input {...register('PrintingSize')} type="number" step="any" min="0" className={inputClass} /></FormField>
+            <FormField label="Printing Sheets"><input {...register('PrintingSheets')} type="number" min="0" className={inputClass} /></FormField>
+            <FormField label="Cost/Sheet (₹)"><input {...register('PrintingCost')} type="number" step="any" min="0" className={inputClass} /></FormField>
+          </div>
+        )}
       </div>
 
       <div className={sectionClass}>

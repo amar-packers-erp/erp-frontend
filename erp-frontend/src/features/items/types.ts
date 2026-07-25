@@ -17,6 +17,31 @@ export interface BoxSpecification {
   sheetBreadth?: number;
 }
 
+export interface OrderConfigurations {
+  duplexLength?: number;
+  duplexBreadth?: number;
+  duplexGsm?: number;
+  duplexRate?: number;
+  numberOf2Ply?: string;
+  twoPlyGsm?: number;
+  twoPlyRate?: number;
+  printed?: boolean;
+  laminated?: boolean;
+  PrintingSize?: number;
+  PrintingCost?: number;
+  PrintingSheets?: number;
+  lamRollSize?: number;
+  lamSheetLength?: number;
+  lamType?: string;
+  fevicolCostPerSheet?: number;
+  lamCostPerSheet?: number;
+  sheeterRate?: number;
+  pastingRate?: number;
+  dieRate?: number;
+  stitchingRate?: number;
+  strappingRate?: number;
+}
+
 export interface Item {
   _id: string;
   itemCode: string;
@@ -28,6 +53,7 @@ export interface Item {
   itemSpecification?: ItemSpecification;
   specifications?: ItemSpecification;
   boxSpecification?: BoxSpecification;
+  orderConfigurations?: OrderConfigurations;
   unitOfMeasure: string;
   createdAt?: string;
 }
@@ -43,5 +69,6 @@ export interface ItemFormData {
     dimensions?: string;
   };
   boxSpecification?: BoxSpecification;
+  orderConfigurations?: OrderConfigurations;
   unitOfMeasure: string;
 }
