@@ -17,16 +17,49 @@ export interface BoxSpecification {
   sheetBreadth?: number;
 }
 
+export interface ItemCustomer {
+  _id: string;
+  companyName: string;
+  contactPerson?: string;
+}
+
+export interface OrderConfigurations {
+  duplexLength?: number;
+  duplexBreadth?: number;
+  duplexGsm?: number;
+  duplexRate?: number;
+  numberOf2Ply?: string;
+  twoPlyGsm?: number;
+  twoPlyRate?: number;
+  printed?: boolean;
+  laminated?: boolean;
+  PrintingSize?: number;
+  PrintingCost?: number;
+  PrintingSheets?: number;
+  lamRollSize?: number;
+  lamSheetLength?: number;
+  lamType?: string;
+  fevicolCostPerSheet?: number;
+  lamCostPerSheet?: number;
+  sheeterRate?: number;
+  pastingRate?: number;
+  dieRate?: number;
+  stitchingRate?: number;
+  strappingRate?: number;
+}
+
 export interface Item {
   _id: string;
   itemCode: string;
   itemName: string;
   brand?: string;
+  customer?: string | ItemCustomer | null;
   type: ItemType;
   category: string;
   itemSpecification?: ItemSpecification;
   specifications?: ItemSpecification;
   boxSpecification?: BoxSpecification;
+  orderConfigurations?: OrderConfigurations;
   unitOfMeasure: string;
   createdAt?: string;
 }
@@ -34,6 +67,7 @@ export interface Item {
 export interface ItemFormData {
   itemName: string;
   brand?: string;
+  customer?: string | null;
   type: ItemType;
   category: string;
   itemSpecification?: {
@@ -41,5 +75,6 @@ export interface ItemFormData {
     dimensions?: string;
   };
   boxSpecification?: BoxSpecification;
+  orderConfigurations?: OrderConfigurations;
   unitOfMeasure: string;
 }

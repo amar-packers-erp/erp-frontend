@@ -1,4 +1,6 @@
 export interface OrderFormData {
+  customerId?: string;
+  itemId?: string;
   orderNumber: string;
   customerName: string;
   itemBrand?: string;
@@ -42,6 +44,8 @@ export interface OrderFormData {
   dieRate?: string;
   stitchingRate?: string;
   strappingRate?: string;
+  totalCost?: number;
+  perBoxCost?: number;
 }
 
 export interface Order extends OrderFormData {

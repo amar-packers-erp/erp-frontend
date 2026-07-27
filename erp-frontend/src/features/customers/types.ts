@@ -10,6 +10,12 @@ export interface Customer {
   creditLimit: number;
   outstandingBalance: number;
   createdAt?: string;
+  linkedItems?: {
+    _id: string;
+    itemCode: string;
+    itemName: string;
+    brand?: string;
+  }[];
 }
 
 export interface CustomerFormData {
