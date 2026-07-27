@@ -4,10 +4,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { OrderFormData } from '../types';
 import { Calculator } from 'lucide-react';
-import { getItems } from '../../../services/api/items';
+import { getOrderableItemsByCustomer } from '../../../services/api/items';
+import { getCustomers } from '../../../services/api/customers';
 import type { Item } from '../../items/types';
+import type { Customer } from '../../customers/types';
 
 const schema = z.object({
+  customerId: z.string().min(1, 'Customer is required'),
+  itemId: z.string().min(1, 'Item is required'),
   orderNumber: z.string().min(3, 'Order number must be at least 3 characters'),
   customerName: z.string().min(2, 'Customer name is required'),
   itemBrand: z.string().min(1, 'Item brand is required'),
@@ -60,17 +64,21 @@ function FormField({ label, error, children }: { label: string; error?: string; 
 const inputClass = 'w-full rounded-lg border border-gray-300 dark:border-neutral-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-black placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors shadow-inner';
 
 export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormProps) {
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState(defaultValues?.customerId || '');
   const [items, setItems] = useState<Item[]>([]);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [selectedBrand, setSelectedBrand] = useState('');
 
   useEffect(() => {
-    getItems().then(res => setItems(res.data || [])).catch(() => {});
+    getCustomers().then(res => setCustomers(res.data || [])).catch(() => setCustomers([]));
   }, []);
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      customerId: '',
+      itemId: '',
       orderNumber: '',
       customerName: '',
       itemBrand: '',
@@ -104,6 +112,17 @@ export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormPr
     },
   });
 
+  useEffect(() => {
+    if (!selectedCustomerId) {
+      setItems([]);
+      return;
+    }
+
+    getOrderableItemsByCustomer(selectedCustomerId)
+      .then(res => setItems(res.data || []))
+      .catch(() => setItems([]));
+  }, [selectedCustomerId]);
+
   const itemBrands = Array.from(
     new Set(items.map((item) => item.brand?.trim()).filter((brand): brand is string => Boolean(brand)))
   ).sort((a, b) => a.localeCompare(b));
@@ -112,23 +131,39 @@ export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormPr
     ? items.filter((item) => item.brand?.trim() === selectedBrand)
     : [];
 
-  const handleBrandSelect = (brand: string) => {
-    setSelectedBrand(brand);
+  const handleCustomerSelect = (customerId: string) => {
+    const customer = customers.find(c => c._id === customerId);
+    setSelectedCustomerId(customerId);
+    setItems([]);
+    setSelectedBrand('');
     setSelectedItem(null);
-    setValue('itemBrand', brand, { shouldValidate: true });
+    setValue('customerId', customerId, { shouldValidate: true });
+    setValue('customerName', customer?.companyName || '', { shouldValidate: true });
+    setValue('itemId', '', { shouldValidate: true });
+    setValue('itemBrand', '', { shouldValidate: true });
     setValue('itemName', '', { shouldValidate: true });
     setValue('boxesPerSheet', '1');
   };
 
-  // When an item is selected, auto-populate box specs
+  const handleBrandSelect = (brand: string) => {
+    setSelectedBrand(brand);
+    setSelectedItem(null);
+    setValue('itemBrand', brand, { shouldValidate: true });
+    setValue('itemId', '', { shouldValidate: true });
+    setValue('itemName', '', { shouldValidate: true });
+    setValue('boxesPerSheet', '1');
+  };
+
   const handleItemSelect = (itemId: string) => {
     const item = items.find(i => i._id === itemId);
     if (!item) {
       setSelectedItem(null);
+      setValue('itemId', '', { shouldValidate: true });
       setValue('itemName', '', { shouldValidate: true });
       return;
     }
     setSelectedItem(item);
+    setValue('itemId', item._id, { shouldValidate: true });
     setValue('itemBrand', item.brand || selectedBrand, { shouldValidate: true });
     setValue('itemName', item.itemName, { shouldValidate: true });
 
@@ -136,11 +171,51 @@ export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormPr
     if (bs) {
       setValue('boxesPerSheet', String(bs.boxesPerSheet || 1));
     }
+
+    const oc = item.orderConfigurations;
+    if (oc) {
+      setValue('duplexLength', String(oc.duplexLength || ''));
+      setValue('duplexBreadth', String(oc.duplexBreadth || ''));
+      setValue('duplexGsm', String(oc.duplexGsm || ''));
+      setValue('duplexRate', String(oc.duplexRate || ''));
+      setValue('numberOf2Ply', String(oc.numberOf2Ply || '0'));
+      setValue('twoPlyGsm', String(oc.twoPlyGsm || ''));
+      setValue('twoPlyRate', String(oc.twoPlyRate || ''));
+      setValue('printed', Boolean(oc.printed));
+      setValue('laminated', Boolean(oc.laminated));
+      setValue('PrintingSize', String(oc.PrintingSize || ''));
+      setValue('PrintingCost', String(oc.PrintingCost || ''));
+      setValue('PrintingSheets', String(oc.PrintingSheets || ''));
+      setValue('lamRollSize', String(oc.lamRollSize || ''));
+      setValue('lamSheetLength', String(oc.lamSheetLength || ''));
+      setValue('lamType', oc.lamType || 'BOPP');
+      setValue('fevicolCostPerSheet', String(oc.fevicolCostPerSheet || ''));
+      setValue('lamCostPerSheet', String(oc.lamCostPerSheet || ''));
+      setValue('sheeterRate', String(oc.sheeterRate || ''));
+      setValue('pastingRate', String(oc.pastingRate || ''));
+      setValue('dieRate', String(oc.dieRate || ''));
+      setValue('stitchingRate', String(oc.stitchingRate || ''));
+      setValue('strappingRate', String(oc.strappingRate || ''));
+    }
   };
 
   const onValidSubmit = (values: FormValues) => {
-    // Attach box spec info from selected item
-    const payload: any = { ...values };
+    const payload: OrderFormData = {
+      ...values,
+      itemSerialNumber: '',
+      dieSerialNumber: '',
+      boxType: '',
+      length: '',
+      breadth: '',
+      height: '',
+      sheetLength: '',
+      sheetBreadth: '',
+      ply: values.numberOf2Ply || '0',
+      gsm: values.duplexGsm || '',
+      totalCost: totalCostOverall,
+      perBoxCost,
+    };
+
     if (selectedItem?.boxSpecification) {
       payload.boxType = selectedItem.boxSpecification.boxType || '';
       payload.itemSerialNumber = selectedItem.boxSpecification.itemSerialNumber || '';
@@ -151,7 +226,8 @@ export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormPr
       payload.sheetLength = String(selectedItem.boxSpecification.sheetLength || '');
       payload.sheetBreadth = String(selectedItem.boxSpecification.sheetBreadth || '');
     }
-    onSubmit(payload as unknown as OrderFormData);
+
+    onSubmit(payload);
   };
 
   const parseNum = (val: string | undefined) => parseFloat(val || '0');
@@ -211,8 +287,19 @@ export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormPr
           <FormField label="Order Number *" error={errors.orderNumber?.message}>
             <input {...register('orderNumber')} placeholder="e.g. ORD-1001" className={inputClass} />
           </FormField>
-          <FormField label="Customer Name *" error={errors.customerName?.message}>
-            <input {...register('customerName')} placeholder="Customer Name" className={inputClass} />
+          <FormField label="Customer Name *" error={errors.customerId?.message || errors.customerName?.message}>
+            <select
+              value={selectedCustomerId}
+              onChange={(e) => handleCustomerSelect(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Select Customer</option>
+              {customers.map((customer) => (
+                <option key={customer._id} value={customer._id}>{customer.companyName}</option>
+              ))}
+            </select>
+            <input type="hidden" {...register('customerId')} />
+            <input type="hidden" {...register('customerName')} />
           </FormField>
         </div>
 
@@ -222,8 +309,9 @@ export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormPr
               value={selectedBrand}
               onChange={(e) => handleBrandSelect(e.target.value)}
               className={inputClass}
+              disabled={!selectedCustomerId}
             >
-              <option value="">— Select Brand —</option>
+              <option value="">{selectedCustomerId ? 'Select Brand' : 'Select customer first'}</option>
               {itemBrands.map((brand) => (
                 <option key={brand} value={brand}>
                   {brand}
@@ -232,7 +320,7 @@ export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormPr
             </select>
             <input type="hidden" {...register('itemBrand')} />
           </FormField>
-          <FormField label="Item Name *" error={errors.itemName?.message}>
+          <FormField label="Item Name *" error={errors.itemId?.message || errors.itemName?.message}>
             <select
               value={selectedItem?._id ?? ''}
               onChange={(e) => handleItemSelect(e.target.value)}
@@ -240,7 +328,7 @@ export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormPr
               disabled={!selectedBrand}
             >
               <option value="">
-                {selectedBrand ? '— Select Item —' : '— Select brand first —'}
+                {selectedBrand ? 'Select Finished Item' : 'Select brand first'}
               </option>
               {filteredItems.map(item => (
                 <option key={item._id} value={item._id}>
@@ -248,6 +336,7 @@ export function OrderForm({ onSubmit, isSubmitting, defaultValues }: OrderFormPr
                 </option>
               ))}
             </select>
+            <input type="hidden" {...register('itemId')} />
             <input type="hidden" {...register('itemName')} />
           </FormField>
           <FormField label="Quantity Ordered *" error={errors.quantityOrdered?.message}>

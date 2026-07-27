@@ -18,7 +18,7 @@ function formatCurrency(amount: number) {
 function EmptyState() {
   return (
     <tr>
-      <td colSpan={7}>
+      <td colSpan={8}>
         <div className="flex flex-col items-center justify-center py-14 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-neutral-800">
             <Users size={22} className="text-gray-400" />
@@ -141,6 +141,7 @@ export function CustomersPage() {
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">GSTIN</th>
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Contact</th>
                 <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Address</th>
+                <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Catalog Items</th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Credit Limit</th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Outstanding</th>
                 {isAdmin && <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Actions</th>}
@@ -149,7 +150,7 @@ export function CustomersPage() {
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-8 text-center text-sm text-gray-400">Loading...</td>
+                  <td colSpan={8} className="px-5 py-8 text-center text-sm text-gray-400">Loading...</td>
                 </tr>
               ) : customers.length === 0 ? (
                 <EmptyState />
@@ -166,6 +167,24 @@ export function CustomersPage() {
                       {customer.email && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{customer.email}</p>}
                     </td>
                     <td className="px-5 py-3.5 text-gray-600 dark:text-gray-400 max-w-[200px] truncate">{customer.billingAddress || '—'}</td>
+                    <td className="px-5 py-3.5">
+                      {customer.linkedItems?.length ? (
+                        <div className="flex max-w-[240px] flex-wrap gap-1">
+                          {customer.linkedItems.slice(0, 3).map((item) => (
+                            <span key={item._id} className="inline-flex items-center rounded border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:border-blue-900 dark:bg-blue-900/20 dark:text-blue-300">
+                              {item.brand ? `${item.brand} - ` : ''}{item.itemName}
+                            </span>
+                          ))}
+                          {customer.linkedItems.length > 3 && (
+                            <span className="inline-flex items-center rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-medium text-gray-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-gray-300">
+                              +{customer.linkedItems.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">No finished items linked</span>
+                      )}
+                    </td>
                     <td className="px-5 py-3.5 text-right font-medium text-gray-900 dark:text-gray-100">{formatCurrency(customer.creditLimit)}</td>
                     <td className="px-5 py-3.5 text-right">
                       <span className={customer.outstandingBalance > 0 ? 'text-red-600 font-medium' : 'text-gray-400'}>
